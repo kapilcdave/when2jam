@@ -23,7 +23,7 @@ function TaskmasterContent() {
   
   // --- STATE ---
   const [eventId, setEventId] = useState<string | null>(null)
-  const [eventName, setEventName] = useState('Team Sync')
+  const [eventName, setEventName] = useState('') // Starts blank
   const [userName, setUserName] = useState('')
   const [loading, setLoading] = useState(false)
   const [statusMsg, setStatusMsg] = useState('')
@@ -107,13 +107,15 @@ function TaskmasterContent() {
 
   const handleSave = async () => {
     if (!userName.trim()) return alert("Enter your name first!")
+    // Default name if empty
+    const finalEventName = eventName.trim() || 'Untitled Jam'
     setLoading(true)
 
     if (!eventId) {
       if (!startDate || !endDate) return
       const { data, error } = await supabase
         .from('events')
-        .insert({ name: eventName, start_date: startDate.toISOString(), end_date: endDate.toISOString() })
+        .insert({ name: finalEventName, start_date: startDate.toISOString(), end_date: endDate.toISOString() })
         .select().single()
 
       if (error) {
@@ -164,7 +166,6 @@ function TaskmasterContent() {
 
   // --- INTERACTION ---
 
-  // Helper to get human readable time for a slot
   const getSlotLabel = (index: number) => {
     if (!startDate) return ""
     const slotsPerDay = (END_HOUR - START_HOUR) * SLOTS_PER_HOUR
@@ -186,17 +187,13 @@ function TaskmasterContent() {
   }
 
   const handleSlotInteraction = (index: number, isDown: boolean) => {
-    // Always select the slot to show info
     setSelectedSlot(index)
-
-    // If mouse down, start painting
     if (isDown) {
         setIsDragging(true)
         const newVal = myGrid[index] === 0 ? 1 : 0
         setPaintMode(newVal === 1)
         updateLocalGrid(index, newVal)
     } 
-    // If just hovering/dragging over
     else if (isDragging) {
         updateLocalGrid(index, paintMode ? 1 : 0)
     }
@@ -240,7 +237,6 @@ function TaskmasterContent() {
         .filter(r => r.availability && r.availability[selectedSlot] === 1)
         .map(r => r.user_name)
     
-    // Add self if local grid is checked but not saved yet
     if (myGrid[selectedSlot] === 1 && !availablePeople.includes(userName) && userName) {
         availablePeople.push(`${userName} (You)`)
     }
@@ -269,7 +265,6 @@ function TaskmasterContent() {
     if (!startDate) return null
     const days = endDate ? Math.ceil(Math.abs(endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1 : 1
     
-    // 1. Time Column
     const timeLabels = []
     for(let h=START_HOUR; h<END_HOUR; h++) {
       for(let s=0; s<SLOTS_PER_HOUR; s++) {
@@ -283,7 +278,6 @@ function TaskmasterContent() {
       }
     }
 
-    // 2. Day Columns
     const dayColumns = []
     for (let d=0; d<days; d++) {
       const currentDay = new Date(startDate)
@@ -297,7 +291,6 @@ function TaskmasterContent() {
         const isFocused = selectedSlot === globalIndex
         const isHourStart = i % SLOTS_PER_HOUR === 0
         
-        // Heatmap
         let bgStyle = {}
         const count = (heatmap && heatmap[globalIndex]) || 0
         const max = groupResponses.length || 1
@@ -349,35 +342,50 @@ function TaskmasterContent() {
     <div className="h-screen bg-black text-white font-mono flex flex-col overflow-hidden" onMouseUp={() => setIsDragging(false)}>
       
       {/* TOP BAR */}
-      <div className="flex-none p-4 border-b border-gray-800 bg-black z-50">
-        <div className="flex justify-between items-center mb-4">
-            <h1 className="text-lg font-bold tracking-widest uppercase truncate max-w-[200px]">{eventName}</h1>
-            {eventId && <button onClick={copyLink} className="text-xs border border-white px-2 py-1 uppercase hover:bg-white hover:text-black transition-colors">Copy Link</button>}
+      <div className="flex-none p-4 border-b border-gray-800 bg-black z-50 space-y-4">
+        {/* SITE TITLE */}
+        <div>
+            <h1 className="text-xl font-bold tracking-widest text-white">WHEN2JAM</h1>
         </div>
         
-        <div className="grid grid-cols-2 gap-4">
+        {/* INPUTS */}
+        <div className="space-y-3">
+            {/* EVENT NAME INPUT */}
             <div>
-                <label className="text-[10px] text-gray-500 uppercase block mb-1">Your Name</label>
-                <input value={userName} onChange={(e) => setUserName(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 p-2 text-sm focus:border-white outline-none transition-colors" placeholder="Required" />
+                <label className="text-[10px] text-gray-500 uppercase block mb-1">Event Name</label>
+                <input 
+                    value={eventName} 
+                    onChange={(e) => !eventId && setEventName(e.target.value)} 
+                    readOnly={!!eventId} 
+                    className={`w-full bg-zinc-900 border border-zinc-800 p-2 text-sm focus:border-white outline-none transition-colors ${eventId ? 'text-gray-500 cursor-default' : 'text-white'}`} 
+                    placeholder="Event Name" 
+                />
             </div>
-            <div className="relative">
-                <label className="text-[10px] text-gray-500 uppercase block mb-1">Dates</label>
-                <div onClick={() => !eventId && setShowDatePicker(!showDatePicker)} className={`w-full bg-zinc-900 border border-zinc-800 p-2 text-sm truncate ${!eventId ? 'cursor-pointer hover:border-gray-600' : 'text-gray-500'}`}>
-                    {startDate ? `${startDate.getMonth()+1}/${startDate.getDate()} - ${endDate?.getDate()}` : 'Select'}
+
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="text-[10px] text-gray-500 uppercase block mb-1">Your Name</label>
+                    <input value={userName} onChange={(e) => setUserName(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 p-2 text-sm focus:border-white outline-none transition-colors" placeholder="Required" />
                 </div>
-                {/* Date Picker Popup */}
-                {showDatePicker && !eventId && (
-                    <div className="absolute top-full right-0 mt-1 bg-zinc-900 border border-gray-700 p-3 z-[60] w-64 shadow-xl">
-                        <div className="flex justify-between items-center mb-2">
-                            <button onClick={() => changeMonth(-1)} className="p-1">&lt;</button>
-                            <span className="text-sm font-bold">{pickerMonth.toLocaleString('default', { month: 'short' })}</span>
-                            <button onClick={() => changeMonth(1)} className="p-1">&gt;</button>
-                        </div>
-                        <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                            {renderMiniCalendarCells(pickerMonth, startDate, endDate, handleDayClick)}
-                        </div>
+                <div className="relative">
+                    <label className="text-[10px] text-gray-500 uppercase block mb-1">Dates</label>
+                    <div onClick={() => !eventId && setShowDatePicker(!showDatePicker)} className={`w-full bg-zinc-900 border border-zinc-800 p-2 text-sm truncate ${!eventId ? 'cursor-pointer hover:border-gray-600' : 'text-gray-500'}`}>
+                        {startDate ? `${startDate.getMonth()+1}/${startDate.getDate()} - ${endDate?.getDate()}` : 'Select'}
                     </div>
-                )}
+                    {/* Date Picker Popup */}
+                    {showDatePicker && !eventId && (
+                        <div className="absolute top-full right-0 mt-1 bg-zinc-900 border border-gray-700 p-3 z-[60] w-64 shadow-xl">
+                            <div className="flex justify-between items-center mb-2">
+                                <button onClick={() => changeMonth(-1)} className="p-1">&lt;</button>
+                                <span className="text-sm font-bold">{pickerMonth.toLocaleString('default', { month: 'short' })}</span>
+                                <button onClick={() => changeMonth(1)} className="p-1">&gt;</button>
+                            </div>
+                            <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                                {renderMiniCalendarCells(pickerMonth, startDate, endDate, handleDayClick)}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
       </div>
@@ -387,7 +395,7 @@ function TaskmasterContent() {
          {renderCalendarGrid()}
       </div>
 
-      {/* BOTTOM INFO PANEL (Mobile First) */}
+      {/* BOTTOM INFO PANEL */}
       <div className="flex-none bg-zinc-900 border-t border-zinc-700 p-4 pb-8 z-50 min-h-[140px] flex flex-col justify-between">
          
          {/* Info Section */}
@@ -402,8 +410,16 @@ function TaskmasterContent() {
                  <div className="flex items-center gap-1"><div className="w-2 h-2 bg-white"></div> Group</div>
              </div>
              
-             <div className="flex gap-2">
-                {statusMsg && <span className="text-green-400 text-xs font-bold animate-pulse my-auto">{statusMsg}</span>}
+             <div className="flex gap-2 items-center">
+                {statusMsg && <span className="text-green-400 text-xs font-bold animate-pulse">{statusMsg}</span>}
+                
+                {/* Buttons placed together as requested */}
+                {eventId && (
+                    <button onClick={copyLink} className="border border-gray-500 text-white px-4 py-2 text-sm font-bold uppercase hover:border-white transition-colors">
+                        Copy Link
+                    </button>
+                )}
+                
                 <button onClick={handleSave} disabled={loading} className="bg-white text-black px-6 py-2 text-sm font-bold uppercase hover:bg-gray-200 disabled:opacity-50">
                     {loading ? '...' : (eventId ? 'Save' : 'Create')}
                 </button>
