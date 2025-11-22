@@ -27,7 +27,7 @@ function TaskmasterContent() {
   const [userName, setUserName] = useState('')
   const [loading, setLoading] = useState(false)
   const [statusMsg, setStatusMsg] = useState('')
-  const [hasChanges, setHasChanges] = useState(false) // New state for button style
+  const [hasChanges, setHasChanges] = useState(false) 
 
   // Dates
   const [startDate, setStartDate] = useState<Date | null>(new Date())
@@ -59,7 +59,7 @@ function TaskmasterContent() {
       loadEvent(id)
     } else {
       initializeGrid(3)
-      setHasChanges(true) // New event always has "unsaved" state initially
+      setHasChanges(true) 
     }
   }, [searchParams])
 
@@ -136,7 +136,7 @@ function TaskmasterContent() {
     }
     
     setLoading(false)
-    setHasChanges(false) // Reset button state
+    setHasChanges(false) 
     setTimeout(() => setStatusMsg(''), 2000)
   }
 
@@ -275,7 +275,7 @@ function TaskmasterContent() {
         const isHour = s === 0
         const label = (h === 12 && isHour) ? '12 PM' : (isHour ? `${h > 12 ? h-12 : h} ${h >= 12 ? 'PM' : 'AM'}` : '')
         timeLabels.push(
-          <div key={`t-${h}-${s}`} className="flex justify-end pr-2 items-center text-[0.65rem] font-bold text-gray-400 border-b border-transparent relative box-border bg-black z-20" style={{ height: SLOT_HEIGHT }}>
+          <div key={`t-${h}-${s}`} className="flex justify-end pr-2 items-center text-[0.65rem] font-bold text-gray-400 border-b border-transparent relative box-border z-20" style={{ height: SLOT_HEIGHT }}>
              {isHour && <span>{label}</span>}
           </div>
         )
@@ -321,7 +321,7 @@ function TaskmasterContent() {
       
       dayColumns.push(
         <div key={`d-${d}`} className="flex flex-col min-w-[70px] flex-1">
-          <div className="sticky top-0 bg-black border-b border-white py-2 text-center z-30 h-[50px] flex flex-col justify-center">
+          <div className="sticky top-0 bg-black border-b border-white py-2 text-center z-30 h-[50px] flex flex-col justify-center shadow-sm">
             <div className="font-bold text-sm text-white">{currentDay.toLocaleDateString('en-US', { weekday: 'short' })}</div>
             <div className="text-[10px] text-gray-400">{currentDay.getMonth()+1}/{currentDay.getDate()}</div>
           </div>
@@ -331,12 +331,21 @@ function TaskmasterContent() {
     }
 
     return (
-      <div className="flex border-t border-gray-700 bg-black w-full h-full">
-         <div className="flex flex-col min-w-[50px] sticky left-0 z-40 border-r border-gray-700 pt-[50px] bg-black shadow-[2px_0_10px_rgba(0,0,0,0.5)]">
-            {timeLabels}
-         </div>
-         <div className="flex flex-1 overflow-auto no-scrollbar">
-            {dayColumns}
+      <div className="flex-1 overflow-auto relative bg-black w-full">
+         {/* Container to hold Time + Days in ONE scroll area */}
+         <div className="flex min-w-max h-full">
+            
+            {/* STICKY TIME COLUMN */}
+            <div className="sticky left-0 z-40 bg-black border-r border-gray-700 flex flex-col shadow-[2px_0_10px_rgba(0,0,0,0.5)]">
+                {/* Sticky Corner Placeholder */}
+                <div className="h-[50px] border-b border-white bg-black sticky top-0 z-50"></div>
+                {timeLabels}
+            </div>
+
+            {/* DAY COLUMNS */}
+            <div className="flex flex-1">
+                {dayColumns}
+            </div>
          </div>
       </div>
     )
@@ -399,10 +408,8 @@ function TaskmasterContent() {
         </div>
       </div>
 
-      {/* SCROLLABLE GRID AREA */}
-      <div className="flex-1 overflow-auto relative">
-         {renderCalendarGrid()}
-      </div>
+      {/* MAIN GRID (Now contains scroll logic inside) */}
+      {renderCalendarGrid()}
 
       {/* BOTTOM INFO PANEL */}
       <div className="flex-none bg-zinc-900 border-t border-zinc-700 p-4 pb-8 z-50 min-h-[140px] flex flex-col justify-between">
@@ -437,11 +444,6 @@ function TaskmasterContent() {
                 </button>
              </div>
          </div>
-      </div>
-
-      {/* FOOTER */}
-      <div className="flex-none p-4 border-t border-gray-800 bg-black text-center text-xs text-gray-500">
-        made with <span className="text-white">♥</span> by kapil
       </div>
 
     </div>
