@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { Suspense, useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
@@ -133,7 +133,7 @@ function Calendar({
 // ──────────────────────────────────────────────────────────────
 // Main Page Component
 // ──────────────────────────────────────────────────────────────
-export default function When2Jam() {
+function When2Jam() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const eventId = searchParams.get('id');
@@ -421,5 +421,13 @@ export default function When2Jam() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-black text-white">Loading…</div>}>
+      <When2Jam />
+    </Suspense>
   );
 }
