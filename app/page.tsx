@@ -424,6 +424,11 @@ function TaskmasterContent() {
          </div>
       </div>
 
+      {/* FOOTER */}
+      <div className="flex-none p-4 border-t border-gray-800 bg-black text-center text-xs text-gray-500">
+        made with <span className="text-white">♥</span> by kapil
+      </div>
+
     </div>
   )
 }
