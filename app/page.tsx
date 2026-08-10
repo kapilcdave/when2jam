@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo, Suspense } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
@@ -50,6 +50,36 @@ function TaskmasterContent() {
   const [paintMode, setPaintMode] = useState(true)
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null)
 
+  // --- LOGIC: DATA ---
+
+  const initializeGrid = useCallback((days: number) => {
+    const totalSlots = days * (END_HOUR - START_HOUR) * SLOTS_PER_HOUR
+    setMyGrid(new Array(totalSlots).fill(0))
+  }, [])
+
+  const loadEvent = useCallback(async (id: string) => {
+    setLoading(true)
+    const { data } = await supabase.from('events').select('*').eq('id', id).single()
+
+    if (data) {
+      setEventName(data.name)
+      const s = new Date(data.start_date)
+      const e = new Date(data.end_date)
+      setStartDate(s)
+      setEndDate(e)
+      setPickerMonth(s)
+      const diffTime = Math.abs(e.getTime() - s.getTime())
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
+      initializeGrid(diffDays)
+    }
+    setLoading(false)
+  }, [initializeGrid])
+
+  const fetchResponses = useCallback(async (id: string) => {
+    const { data } = await supabase.from('responses').select('*').eq('event_id', id)
+    if (data) setGroupResponses(data)
+  }, [])
+
   // --- EFFECTS ---
 
   useEffect(() => {
@@ -61,7 +91,7 @@ function TaskmasterContent() {
       initializeGrid(3)
       setHasChanges(true) 
     }
-  }, [searchParams])
+  }, [initializeGrid, loadEvent, searchParams])
 
   useEffect(() => {
     if (!eventId) return
@@ -75,37 +105,7 @@ function TaskmasterContent() {
       .subscribe()
       
     return () => { supabase.removeChannel(channel) }
-  }, [eventId])
-
-  // --- LOGIC: DATA ---
-
-  const loadEvent = async (id: string) => {
-    setLoading(true)
-    const { data, error } = await supabase.from('events').select('*').eq('id', id).single()
-    
-    if (data) {
-      setEventName(data.name)
-      const s = new Date(data.start_date)
-      const e = new Date(data.end_date)
-      setStartDate(s)
-      setEndDate(e)
-      setPickerMonth(s)
-      const diffTime = Math.abs(e.getTime() - s.getTime())
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
-      initializeGrid(diffDays)
-    }
-    setLoading(false)
-  }
-
-  const fetchResponses = async (id: string) => {
-    const { data } = await supabase.from('responses').select('*').eq('event_id', id)
-    if (data) setGroupResponses(data)
-  }
-
-  const initializeGrid = (days: number) => {
-    const totalSlots = days * (END_HOUR - START_HOUR) * SLOTS_PER_HOUR
-    setMyGrid(new Array(totalSlots).fill(0))
-  }
+  }, [eventId, fetchResponses])
 
   const handleSave = async () => {
     if (!userName.trim()) return alert("Enter your name first!")

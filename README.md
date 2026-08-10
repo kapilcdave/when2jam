@@ -62,13 +62,16 @@ A lightweight, real-time availability scheduler built for musicians, teams, and 
    ```
 
 3. **Set up environment variables**
-   Create a `.env.local` file in the project root:
+   Copy `.env.example` to `.env.local` and fill in your Supabase values:
    ```env
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
-4. **Run the development server**
+4. **Set up Supabase**
+   Run `supabase/migrations/0001_initial_schema.sql` in the Supabase SQL Editor if you are creating a fresh project.
+
+5. **Run the development server**
    ```bash
    npm run dev
    ```
@@ -88,6 +91,12 @@ Or deploy directly to Vercel:
 npm install -g vercel
 vercel
 ```
+
+## Supabase Recovery
+
+The deployed app was found pointing at Supabase project ref `wflwbjwjseuijbkrvgnj`. If the project is paused, resume it in Supabase and redeploy Vercel with the current `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+
+If the old project cannot be resumed, create a new Supabase project, run `supabase/migrations/0001_initial_schema.sql`, update the two Vercel environment variables, and redeploy. See `docs/RECOVERY.md` for the full recovery checklist.
 
 ---
 
